@@ -45,11 +45,6 @@ customers.info()
 
 # COMMAND ----------
 
-# Checking for Data types
-print(customers.dtypes)
-
-# COMMAND ----------
-
 # changing the Age type from float to in64
 customers["Age"] = customers["Age"].astype('Int64')
 
@@ -121,7 +116,12 @@ customers["City"] = customers["City"].replace({"Mashad": "Mashhad"})
 
 # COMMAND ----------
 
-# Re-check the value counts.After Standardizing Mashhad
+# Standardize 'tehran' to 'Tehran'
+customers["City"] = customers["City"].replace({"tehran": "Tehran"})
+
+# COMMAND ----------
+
+# Re-check the value counts.After Standardizing Mashhad and Tehran
 print(customers["City"].value_counts())
 
 # COMMAND ----------
