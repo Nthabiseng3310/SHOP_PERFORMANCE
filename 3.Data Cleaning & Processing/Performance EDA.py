@@ -96,8 +96,8 @@ customers["Age_Group"] = customers["Age_Group"].fillna(customers["Age_Group"].mo
 
 # COMMAND ----------
 
-# replacing the null or missing values on City column with 'Unknown'
-customers["City"]=customers["City"].fillna('Unknown')
+# replacing the null or missing values on City column with 'most mentioned'
+customers["City"] = customers["City"].fillna(customers["City"].mode()[0])
 
 # COMMAND ----------
 
@@ -431,10 +431,6 @@ display(customers_orders_payments)
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
 # calling the products table with spark from databricks
 products=spark.table('workspace.default.products_performance')
 
@@ -451,7 +447,7 @@ print(products.head())
 
 # COMMAND ----------
 
-# Checking howmany rows and columns my table has
+# Checking how many rows and columns my table has
 print(products.shape)
 
 
@@ -529,3 +525,29 @@ print("Table workspace.default.shp_performance saved successfully")
 
 Shop_Perfomance = spark.table("workspace.default.shp_performance").toPandas()
 display(Shop_Perfomance)
+
+# COMMAND ----------
+
+import matplotlib.pyplot as plt
+df=orders.groupby('Status')['CustomerID'].nunique().reset_index()
+display(df)
+
+# COMMAND ----------
+
+df.plot(kind='bar', x='Status', y='CustomerID', color='teal', legend=True)
+
+plt.title("Customers who ordered")
+plt.xticks(rotation=0)
+plt.ylabel("Number of Customers")
+plt.show()
+
+# COMMAND ----------
+
+# Pie chart: Payment Method by number of customers from the orders table
+payment_counts = orders.groupby('PaymentMethod')['CustomerID'].nunique()
+
+plt.figure(figsize=(8, 8))
+plt.pie(payment_counts, labels=payment_counts.index, autopct='%1.1f%%', startangle=90, colors=plt.cm.Set3.colors)
+plt.title("Payment Method by Number of Customers")
+plt.axis('equal')
+plt.show()
