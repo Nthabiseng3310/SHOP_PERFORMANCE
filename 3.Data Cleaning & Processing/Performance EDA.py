@@ -103,8 +103,11 @@ customers["Age_Group"] = customers["Age_Group"].fillna(customers["Age_Group"].mo
 
 # COMMAND ----------
 
-# replacing the null or missing values on City column with 'most mentioned'
+# replacing the null or missing values on City column with the mode (most mentioned city)
+print(f"Missing City values before fillna: {customers['City'].isnull().sum()}")
 customers["City"] = customers["City"].fillna(customers["City"].mode()[0])
+print(f"Missing City values after fillna: {customers['City'].isnull().sum()}")
+print(f"Mode city used: {customers['City'].mode()[0]}")
 
 # COMMAND ----------
 
@@ -535,6 +538,52 @@ display(Shop_Perfomance)
 
 # COMMAND ----------
 
+# Checking for any possible missing values on the new dataframe
+print((Shop_Perfomance).isnull().sum())
+
+# COMMAND ----------
+
+# Replace missing City values with the most common city (mode)
+Shop_Perfomance["City"] = Shop_Perfomance["City"].fillna(
+    Shop_Perfomance["City"].mode()[0]
+)
+
+# Verify no more missing values in City
+print("Missing City values after fill:", Shop_Perfomance["City"].isnull().sum())
+
+# COMMAND ----------
+
+# Replace missing CustomerSegment values with the most common segment (mode)
+Shop_Perfomance["CustomerSegment"] = Shop_Perfomance["CustomerSegment"].fillna(
+    Shop_Perfomance["CustomerSegment"].mode()[0]
+)
+
+# Verify no more missing values in CustomerSegment
+print("Missing CustomerSegment values after fill:", Shop_Perfomance["CustomerSegment"].isnull().sum())
+
+# COMMAND ----------
+
+# Replace missing SignupDate values with the most common SignupDate (mode)
+Shop_Perfomance["SignupDate"] = Shop_Perfomance["SignupDate"].fillna(
+    Shop_Perfomance["SignupDate"].mode()[0]
+)
+
+# Verify no more missing values in SignupDate
+print("Missing SignupDate values after fill:", Shop_Perfomance["SignupDate"].isnull().sum())
+
+# COMMAND ----------
+
+# Count distinct city names
+distinct_cities = Shop_Perfomance["City"].nunique()
+print("Distinct city names:", distinct_cities)
+
+# COMMAND ----------
+
+# Standardize 'tehran' to 'Tehran'
+customers["City"] = customers["City"].replace({"tehran": "Tehran"})
+
+# COMMAND ----------
+
 import matplotlib.pyplot as plt
 df=orders.groupby('Status')['CustomerID'].nunique().reset_index()
 display(df)
@@ -557,4 +606,117 @@ plt.figure(figsize=(8, 8))
 plt.pie(payment_counts, labels=payment_counts.index, autopct='%1.1f%%', startangle=90, colors=plt.cm.Set3.colors)
 plt.title("Payment Method by Number of Customers")
 plt.axis('equal')
+plt.show()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # QUESTION.5&6 **BUSINESS QUESTIONS AND VISUALIZATIONS**
+
+# COMMAND ----------
+
+# DBTITLE 1,QUESTION.5 Key Performance  Indicators
+# KPI Cards
+import pandas as pd
+
+kpis = {
+    "Total Revenue (ZAR)": f"R {Shop_Perfomance['Revenue_ZAR'].sum():,.0f}",
+    "Average Order Value (ZAR)": f"R {Shop_Perfomance['Revenue_ZAR'].mean():,.0f}",
+    "Total Quantity": f"{Shop_Perfomance['Quantity'].sum():,.0f}",
+    "Distinct Categories": f"{Shop_Perfomance['Category'].nunique()}",
+    "Record Count": f"{len(Shop_Perfomance):,}",
+}
+
+kpi_df = pd.DataFrame(list(kpis.items()), columns=["KPI", "Value"])
+display(kpi_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Which products and categories bring in the most revenue? Which sell the most units? Are these the same?**
+
+# COMMAND ----------
+
+import matplotlib.pyplot as plt
+
+# Group revenue by month and plot a line graph
+monthly_revenue = (
+    Shop_Perfomance
+    .groupby(Shop_Perfomance["OrderDate"].dt.to_period("M"))["Revenue_ZAR"]
+    .sum()
+)
+
+plt.figure(figsize=(10, 6))
+monthly_revenue.plot(kind="line", marker="o", color="teal")
+plt.title("Revenue by Month")
+plt.xlabel("Month")
+plt.ylabel("Revenue (ZAR)")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+
+# COMMAND ----------
+
+import matplotlib.pyplot as plt
+
+# Group revenue by Category and sort descending
+category_revenue = (
+    Shop_Perfomance.groupby("Category")["Revenue_ZAR"]
+    .sum()
+    .sort_values(ascending=False)
+)
+
+# Create a bar graph
+plt.figure(figsize=(10, 6))
+category_revenue.plot(kind="bar", color="teal")
+plt.title("Total Revenue by Category")
+plt.xlabel("Category")
+plt.ylabel("Revenue (ZAR)")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+
+# COMMAND ----------
+
+import matplotlib.pyplot as plt
+
+# Group revenue by ProductNames and sort descending
+ProductName_revenue = (
+    Shop_Perfomance.groupby("ProductName")["Revenue_ZAR"]
+    .sum()
+    .sort_values(ascending=False)
+)
+
+# Create a bar graph
+plt.figure(figsize=(10, 6))
+ProductName_revenue.plot(kind="bar", color="teal")
+plt.title("Total Revenue by ProductName")
+plt.xlabel("ProductName")
+plt.ylabel("Revenue (ZAR)")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Which cities and customer segments (New, Regular, VIP) are most valuable?
+
+# COMMAND ----------
+
+import matplotlib.pyplot as plt
+
+segment_revenue = (
+    Shop_Perfomance.groupby("CustomerSegment")["Revenue_ZAR"]
+    .sum()
+    .sort_values(ascending=False)
+)
+
+plt.figure(figsize=(8, 5))
+segment_revenue.plot(kind="bar", color="teal")
+plt.title("Total Revenue by Customer Segment")
+plt.xlabel("Customer Segment")
+plt.ylabel("Revenue (ZAR)")
+plt.xticks(rotation=0)
+plt.tight_layout()
 plt.show()
