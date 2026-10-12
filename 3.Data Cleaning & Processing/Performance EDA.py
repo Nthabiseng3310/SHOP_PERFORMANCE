@@ -79,6 +79,13 @@ print(customers.isnull().sum())
 
 # COMMAND ----------
 
+# printing rows where City is missing (null)
+missing_city = customers[customers["City"].isnull()]
+print(f"Number of missing City values: {missing_city.shape[0]}")
+display(missing_city)
+
+# COMMAND ----------
+
 # checking for Column names
 print(customers.columns)
 
