@@ -720,3 +720,29 @@ plt.ylabel("Revenue (ZAR)")
 plt.xticks(rotation=0)
 plt.tight_layout()
 plt.show()
+
+# COMMAND ----------
+
+# DBTITLE 1,Total Revenue by City
+import matplotlib.pyplot as plt
+
+# Standardize city names (based on Cell 23 findings: 'Mashad' and 'tehran' are unstandardized variants)
+Shop_Perfomance["City"] = Shop_Perfomance["City"].replace({
+    "Mashad": "Mashhad",
+    "tehran": "Tehran"
+})
+
+city_revenue = (
+    Shop_Perfomance.groupby("City")["Revenue_ZAR"]
+    .sum()
+    .sort_values(ascending=False)
+)
+
+plt.figure(figsize=(10, 6))
+city_revenue.plot(kind="bar", color="teal")
+plt.title("Total Revenue by City")
+plt.xlabel("City")
+plt.ylabel("Revenue (ZAR)")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
