@@ -704,6 +704,7 @@ plt.show()
 
 # COMMAND ----------
 
+# DBTITLE 1,Customer_Segments
 import matplotlib.pyplot as plt
 
 segment_revenue = (
@@ -745,4 +746,58 @@ plt.xlabel("City")
 plt.ylabel("Revenue (ZAR)")
 plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
+plt.show()
+
+# COMMAND ----------
+
+# DBTITLE 1,Cancelled/Returned/Completed_Orders
+import matplotlib.pyplot as plt
+
+# Count orders by status
+status_counts = orders.groupby("Status")["OrderID"].nunique()
+
+# Doughnut chart
+fig, ax = plt.subplots(figsize=(7, 7))
+wedges, texts, autotexts = ax.pie(
+    status_counts,
+    labels=status_counts.index,
+    autopct="%1.1f%%",
+    startangle=90,
+    colors=plt.cm.Set3.colors,
+    wedgeprops=dict(width=0.4),  # doughnut hole
+)
+ax.set_title("Share of Orders by Status")
+plt.tight_layout()
+plt.show()
+
+# COMMAND ----------
+
+import matplotlib.pyplot as plt
+
+# Group by Discount: average quantity per order and total revenue
+discount_summary = (
+    Shop_Perfomance.groupby("Discount")
+    .agg(AvgQuantity=("Quantity", "mean"), TotalRevenue=("Revenue_ZAR", "sum"))
+    .reset_index()
+    .sort_values("Discount")
+)
+
+fig, ax1 = plt.subplots(figsize=(10, 6))
+
+# Line 1: Average quantity per order (left y-axis)
+ax1.plot(discount_summary["Discount"], discount_summary["AvgQuantity"],
+         color="teal", marker="o", label="Avg Quantity per Order")
+ax1.set_xlabel("Discount")
+ax1.set_ylabel("Avg Quantity per Order", color="teal")
+ax1.tick_params(axis="y", labelcolor="teal")
+
+# Line 2: Total revenue (right y-axis)
+ax2 = ax1.twinx()
+ax2.plot(discount_summary["Discount"], discount_summary["TotalRevenue"],
+         color="salmon", marker="s", label="Total Revenue (ZAR)")
+ax2.set_ylabel("Total Revenue (ZAR)", color="salmon")
+ax2.tick_params(axis="y", labelcolor="salmon")
+
+plt.title("Discount vs Order Size and Revenue")
+fig.tight_layout()
 plt.show()
