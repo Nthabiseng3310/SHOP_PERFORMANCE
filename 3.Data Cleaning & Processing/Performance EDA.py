@@ -538,6 +538,29 @@ display(Shop_Perfomance)
 
 # COMMAND ----------
 
+# Calculate net revenue by order status
+# Completed orders = positive revenue, Cancelled & Returned = deductions
+net_revenue_by_status = (
+    Shop_Perfomance.groupby("Status")["Revenue_ZAR"]
+    .sum()
+    .sort_values(ascending=False)
+)
+print("Revenue by Status:")
+print(net_revenue_by_status)
+
+# Net revenue = completed revenue minus cancelled & returned revenue
+completed_revenue = Shop_Perfomance.loc[Shop_Perfomance["Status"] == "Completed", "Revenue_ZAR"].sum()
+cancelled_revenue = Shop_Perfomance.loc[Shop_Perfomance["Status"] == "Cancelled", "Revenue_ZAR"].sum()
+returned_revenue = Shop_Perfomance.loc[Shop_Perfomance["Status"] == "Returned", "Revenue_ZAR"].sum()
+
+net_revenue = completed_revenue - cancelled_revenue - returned_revenue
+print(f"\nCompleted Revenue:  R {completed_revenue:,.0f}")
+print(f"Cancelled Revenue: R {cancelled_revenue:,.0f}")
+print(f"Returned Revenue:  R {returned_revenue:,.0f}")
+print(f"\nNet Revenue:       R {net_revenue:,.0f}")
+
+# COMMAND ----------
+
 # Checking for any possible missing values on the new dataframe
 print((Shop_Perfomance).isnull().sum())
 
@@ -616,11 +639,19 @@ plt.show()
 # COMMAND ----------
 
 # DBTITLE 1,QUESTION.5 Key Performance  Indicators
-# KPI Cards
+# KPI Cards (Net Revenue accounts for Completed, Cancelled & Returned orders)
 import pandas as pd
 
+completed = Shop_Perfomance.loc[Shop_Perfomance["Status"] == "Completed", "Revenue_ZAR"].sum()
+cancelled = Shop_Perfomance.loc[Shop_Perfomance["Status"] == "Cancelled", "Revenue_ZAR"].sum()
+returned = Shop_Perfomance.loc[Shop_Perfomance["Status"] == "Returned", "Revenue_ZAR"].sum()
+net_revenue = completed - cancelled - returned
+
 kpis = {
-    "Total Revenue (ZAR)": f"R {Shop_Perfomance['Revenue_ZAR'].sum():,.0f}",
+    "Net Revenue (ZAR)": f"R {net_revenue:,.0f}",
+    "Completed Revenue (ZAR)": f"R {completed:,.0f}",
+    "Cancelled Revenue (ZAR)": f"R {cancelled:,.0f}",
+    "Returned Revenue (ZAR)": f"R {returned:,.0f}",
     "Average Order Value (ZAR)": f"R {Shop_Perfomance['Revenue_ZAR'].mean():,.0f}",
     "Total Quantity": f"{Shop_Perfomance['Quantity'].sum():,.0f}",
     "Distinct Categories": f"{Shop_Perfomance['Category'].nunique()}",
@@ -639,18 +670,19 @@ display(kpi_df)
 
 import matplotlib.pyplot as plt
 
-# Group revenue by month and plot a line graph
-monthly_revenue = (
-    Shop_Perfomance
-    .groupby(Shop_Perfomance["OrderDate"].dt.to_period("M"))["Revenue_ZAR"]
-    .sum()
+# Net revenue: Completed = positive, Cancelled & Returned = negative
+net_rev = Shop_Perfomance["Revenue_ZAR"].where(
+    Shop_Perfomance["Status"] == "Completed", -Shop_Perfomance["Revenue_ZAR"]
 )
 
+# Group net revenue by month and plot a line graph
+monthly_net = net_rev.groupby(Shop_Perfomance["OrderDate"].dt.to_period("M")).sum()
+
 plt.figure(figsize=(10, 6))
-monthly_revenue.plot(kind="line", marker="o", color="teal")
-plt.title("Revenue by Month")
+monthly_net.plot(kind="line", marker="o", color="teal")
+plt.title("Net Revenue by Month")
 plt.xlabel("Month")
-plt.ylabel("Revenue (ZAR)")
+plt.ylabel("Net Revenue (ZAR)")
 plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.show()
@@ -659,19 +691,20 @@ plt.show()
 
 import matplotlib.pyplot as plt
 
-# Group revenue by Category and sort descending
-category_revenue = (
-    Shop_Perfomance.groupby("Category")["Revenue_ZAR"]
-    .sum()
-    .sort_values(ascending=False)
+# Net revenue: Completed = positive, Cancelled & Returned = negative
+net_rev = Shop_Perfomance["Revenue_ZAR"].where(
+    Shop_Perfomance["Status"] == "Completed", -Shop_Perfomance["Revenue_ZAR"]
 )
+
+# Group net revenue by Category and sort descending
+category_net = net_rev.groupby(Shop_Perfomance["Category"]).sum().sort_values(ascending=False)
 
 # Create a bar graph
 plt.figure(figsize=(10, 6))
-category_revenue.plot(kind="bar", color="teal")
-plt.title("Total Revenue by Category")
+category_net.plot(kind="bar", color="teal")
+plt.title("Net Revenue by Category")
 plt.xlabel("Category")
-plt.ylabel("Revenue (ZAR)")
+plt.ylabel("Net Revenue (ZAR)")
 plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.show()
@@ -680,19 +713,19 @@ plt.show()
 
 import matplotlib.pyplot as plt
 
-# Group revenue by ProductNames and sort descending
-ProductName_revenue = (
-    Shop_Perfomance.groupby("ProductName")["Revenue_ZAR"]
-    .sum()
-    .sort_values(ascending=False)
+# Net revenue: Completed = positive, Cancelled & Returned = negative
+net_rev = Shop_Perfomance["Revenue_ZAR"].where(
+    Shop_Perfomance["Status"] == "Completed", -Shop_Perfomance["Revenue_ZAR"]
 )
 
-# Create a bar graph
+# Group net revenue by ProductName and sort descending
+product_net = net_rev.groupby(Shop_Perfomance["ProductName"]).sum().sort_values(ascending=False)
+
 plt.figure(figsize=(10, 6))
-ProductName_revenue.plot(kind="bar", color="teal")
-plt.title("Total Revenue by ProductName")
+product_net.plot(kind="bar", color="teal")
+plt.title("Net Revenue by ProductName")
 plt.xlabel("ProductName")
-plt.ylabel("Revenue (ZAR)")
+plt.ylabel("Net Revenue (ZAR)")
 plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.show()
@@ -707,43 +740,32 @@ plt.show()
 # DBTITLE 1,Customer_Segments
 import matplotlib.pyplot as plt
 
-segment_revenue = (
-    Shop_Perfomance.groupby("CustomerSegment")["Revenue_ZAR"]
-    .sum()
-    .sort_values(ascending=False)
-)
+net_rev = Shop_Perfomance["Revenue_ZAR"].where(Shop_Perfomance["Status"] == "Completed", -Shop_Perfomance["Revenue_ZAR"])
+segment_net = net_rev.groupby(Shop_Perfomance["CustomerSegment"]).sum()
 
-plt.figure(figsize=(8, 5))
-segment_revenue.plot(kind="bar", color="teal")
-plt.title("Total Revenue by Customer Segment")
-plt.xlabel("Customer Segment")
-plt.ylabel("Revenue (ZAR)")
-plt.xticks(rotation=0)
+plt.figure(figsize=(7, 7))
+plt.pie(segment_net, labels=segment_net.index, autopct="%1.1f%%", startangle=90, colors=plt.cm.Set3.colors)
+plt.title("Net Revenue by Customer Segment")
 plt.tight_layout()
 plt.show()
 
 # COMMAND ----------
 
-# DBTITLE 1,Total Revenue by City
+# DBTITLE 1,Net Revenue by City
 import matplotlib.pyplot as plt
 
-# Standardize city names (based on Cell 23 findings: 'Mashad' and 'tehran' are unstandardized variants)
-Shop_Perfomance["City"] = Shop_Perfomance["City"].replace({
-    "Mashad": "Mashhad",
-    "tehran": "Tehran"
-})
+# Standardize city names
+Shop_Perfomance["City"] = Shop_Perfomance["City"].replace({"Mashad": "Mashhad", "tehran": "Tehran"})
 
-city_revenue = (
-    Shop_Perfomance.groupby("City")["Revenue_ZAR"]
-    .sum()
-    .sort_values(ascending=False)
-)
+# Net revenue: Completed = positive, Cancelled & Returned = negative
+net_rev = Shop_Perfomance["Revenue_ZAR"].where(Shop_Perfomance["Status"] == "Completed", -Shop_Perfomance["Revenue_ZAR"])
+city_net = net_rev.groupby(Shop_Perfomance["City"]).sum().sort_values(ascending=False)
 
 plt.figure(figsize=(10, 6))
-city_revenue.plot(kind="bar", color="teal")
-plt.title("Total Revenue by City")
+city_net.plot(kind="bar", color="teal")
+plt.title("Net Revenue by City")
 plt.xlabel("City")
-plt.ylabel("Revenue (ZAR)")
+plt.ylabel("Net Revenue (ZAR)")
 plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.show()
