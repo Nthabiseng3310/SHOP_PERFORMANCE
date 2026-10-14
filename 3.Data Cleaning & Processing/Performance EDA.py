@@ -796,30 +796,40 @@ plt.show()
 
 import matplotlib.pyplot as plt
 
-# Group by Discount: average quantity per order and total revenue
+# Net revenue: Completed = positive, Cancelled & Returned = negative
+net_rev = Shop_Perfomance["Revenue_ZAR"].where(
+    Shop_Perfomance["Status"] == "Completed", -Shop_Perfomance["Revenue_ZAR"]
+)
+
+# Group by Discount: average net order value and total net revenue
 discount_summary = (
-    Shop_Perfomance.groupby("Discount")
-    .agg(AvgQuantity=("Quantity", "mean"), TotalRevenue=("Revenue_ZAR", "sum"))
+    pd.DataFrame({
+        "Discount": Shop_Perfomance["Discount"],
+        "NetRevenue": net_rev,
+        "Quantity": Shop_Perfomance["Quantity"],
+    })
+    .groupby("Discount")
+    .agg(AvgOrderValue=("NetRevenue", "mean"), TotalNetRevenue=("NetRevenue", "sum"))
     .reset_index()
     .sort_values("Discount")
 )
 
 fig, ax1 = plt.subplots(figsize=(10, 6))
 
-# Line 1: Average quantity per order (left y-axis)
-ax1.plot(discount_summary["Discount"], discount_summary["AvgQuantity"],
-         color="teal", marker="o", label="Avg Quantity per Order")
+# Line 1: Avg net order value (left y-axis)
+ax1.plot(discount_summary["Discount"], discount_summary["AvgOrderValue"],
+         color="teal", marker="o", label="Avg Net Order Value (ZAR)")
 ax1.set_xlabel("Discount")
-ax1.set_ylabel("Avg Quantity per Order", color="teal")
+ax1.set_ylabel("Avg Net Order Value (ZAR)", color="teal")
 ax1.tick_params(axis="y", labelcolor="teal")
 
-# Line 2: Total revenue (right y-axis)
+# Line 2: Total net revenue (right y-axis)
 ax2 = ax1.twinx()
-ax2.plot(discount_summary["Discount"], discount_summary["TotalRevenue"],
-         color="salmon", marker="s", label="Total Revenue (ZAR)")
-ax2.set_ylabel("Total Revenue (ZAR)", color="salmon")
+ax2.plot(discount_summary["Discount"], discount_summary["TotalNetRevenue"],
+         color="salmon", marker="s", label="Total Net Revenue (ZAR)")
+ax2.set_ylabel("Total Net Revenue (ZAR)", color="salmon")
 ax2.tick_params(axis="y", labelcolor="salmon")
 
-plt.title("Discount vs Order Size and Revenue")
+plt.title("Discount Impact on Avg Order Value & Net Revenue")
 fig.tight_layout()
 plt.show()
